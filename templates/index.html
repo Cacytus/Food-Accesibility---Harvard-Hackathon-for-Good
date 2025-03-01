@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Boston Food Access Map</title>
+  <!-- Add Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
   <style>
     /* Basic reset and styling */
     body {
@@ -67,11 +71,10 @@
       flex: 1;
       padding: 1rem;
     }
-    /* Placeholder styling for the map */
+    /* Map styling - important to set a height */
     #map {
       width: 100%;
       height: 100%;
-      background-color: #ddd;
       border-radius: 4px;
     }
   </style>
@@ -142,16 +145,43 @@
       </div>
       <button class="apply-btn" onclick="applyFilters()">Apply Filters</button>
     </div>
-    <!-- Main content area (e.g., Map) -->
+    <!-- Main content area with the map -->
     <div class="main-content">
-      <div id="map">
-        <!-- Map would be embedded here using Google Maps or Leaflet -->
-        <p style="text-align:center;padding-top:40vh;color:#555;">Map Placeholder</p>
-      </div>
+      <div id="map"></div>
     </div>
   </div>
+
+  <!-- Add Leaflet JS after the body content -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+  
   <script>
-    // JavaScript function to capture filter values and send them to your Flask backend (or update your map)
+    // Initialize the map centered on Boston
+    const map = L.map('map').setView([42.3601, -71.0589], 12); // Boston coordinates with zoom level 12
+    
+    // Add OpenStreetMap tile layer (free to use)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(map);
+
+    // Optional: Add a marker for downtown Boston
+    L.marker([42.3601, -71.0589]).addTo(map)
+      .bindPopup('Downtown Boston')
+      .openPopup();
+    
+    // Set bounds to restrict map panning to Greater Boston Area
+    const bostonBounds = L.latLngBounds(
+      L.latLng(42.2279, -71.1912), // Southwest bounds
+      L.latLng(42.4671, -70.9185)  // Northeast bounds
+    );
+    map.setMaxBounds(bostonBounds);
+    map.on('drag', function() {
+      map.panInsideBounds(bostonBounds, { animate: false });
+    });
+
+    // JavaScript function to capture filter values and send them to your Flask backend
     function applyFilters() {
       const filters = {
         location: document.getElementById('location').value,
@@ -168,7 +198,7 @@
       };
 
       console.log("Filters applied:", filters);
-      // In a real app, you'd send this filter data to the backend (e.g., via AJAX/fetch)
+      // In the future, you'll send this filter data to the backend
       // and update the map with the returned results.
     }
   </script>
