@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Boston Food Access Map</title>
+  <style>
+    /* Basic reset and styling */
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      background-color: #1ABC9C;
+      color: #fff;
+      padding: 1rem;
+      text-align: center;
+    }
+    .container {
+      display: flex;
+      flex: 1;
+    }
+    .sidebar {
+      width: 300px;
+      background: #fff;
+      padding: 1rem;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      overflow-y: auto;
+    }
+    .sidebar h2 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .filter-group {
+      margin-bottom: 1.5rem;
+    }
+    .filter-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    .filter-group input[type="text"],
+    .filter-group select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .filter-group input[type="checkbox"] {
+      margin-right: 0.5rem;
+    }
+    .apply-btn {
+      background-color: #1ABC9C;
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      width: 100%;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .main-content {
+      flex: 1;
+      padding: 1rem;
+    }
+    /* Placeholder styling for the map */
+    #map {
+      width: 100%;
+      height: 100%;
+      background-color: #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Boston Food Access Map</h1>
+  </header>
+  <div class="container">
+    <!-- Sidebar with filters -->
+    <div class="sidebar">
+      <h2>Filters</h2>
+      <div class="filter-group">
+        <label for="location">Location</label>
+        <input type="text" id="location" placeholder="Enter a location">
+      </div>
+      <div class="filter-group">
+        <label for="distance">Distance</label>
+        <select id="distance">
+          <option value="1">Within 1 mile</option>
+          <option value="3">Within 3 miles</option>
+          <option value="5">Within 5 miles</option>
+          <option value="10">Within 10 miles</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="price-range">Price Range</label>
+        <select id="price-range">
+          <option value="$">$</option>
+          <option value="$$">$$</option>
+          <option value="$$$">$$$</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Specific Ethnic Food Groups</label>
+        <input type="checkbox" id="mexican" value="mexican">
+        <label for="mexican" style="display:inline;">Mexican</label><br>
+        <input type="checkbox" id="italian" value="italian">
+        <label for="italian" style="display:inline;">Italian</label><br>
+        <input type="checkbox" id="asian" value="asian">
+        <label for="asian" style="display:inline;">Asian</label>
+      </div>
+      <div class="filter-group">
+        <label for="food-search">Food Search</label>
+        <input type="text" id="food-search" placeholder="Search for food items...">
+      </div>
+      <div class="filter-group">
+        <label for="health-info">Health Information</label>
+        <select id="health-info">
+          <option value="">Select health criteria</option>
+          <option value="low-sodium">Low Sodium</option>
+          <option value="gluten-free">Gluten-Free</option>
+          <option value="organic">Organic</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <input type="checkbox" id="snap" value="snap">
+        <label for="snap" style="display:inline;">SNAP Accepted</label>
+      </div>
+      <div class="filter-group">
+        <label for="nutrition-suggestion">Nutrition Suggestion</label>
+        <select id="nutrition-suggestion">
+          <option value="">Select suggestion</option>
+          <option value="balanced">Balanced Diet</option>
+          <option value="high-protein">High Protein</option>
+          <option value="low-carb">Low Carb</option>
+        </select>
+      </div>
+      <button class="apply-btn" onclick="applyFilters()">Apply Filters</button>
+    </div>
+    <!-- Main content area (e.g., Map) -->
+    <div class="main-content">
+      <div id="map">
+        <!-- Map would be embedded here using Google Maps or Leaflet -->
+        <p style="text-align:center;padding-top:40vh;color:#555;">Map Placeholder</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    // JavaScript function to capture filter values and send them to your Flask backend (or update your map)
+    function applyFilters() {
+      const filters = {
+        location: document.getElementById('location').value,
+        distance: document.getElementById('distance').value,
+        priceRange: document.getElementById('price-range').value,
+        foodSearch: document.getElementById('food-search').value,
+        healthInfo: document.getElementById('health-info').value,
+        snap: document.getElementById('snap').checked,
+        nutrition: document.getElementById('nutrition-suggestion').value,
+        // For ethnic food groups, collect all checked checkboxes
+        ethnicGroups: Array.from(document.querySelectorAll('input[type="checkbox"]'))
+                          .filter(cb => cb.checked && cb.id !== 'snap')
+                          .map(cb => cb.value)
+      };
+
+      console.log("Filters applied:", filters);
+      // In a real app, you'd send this filter data to the backend (e.g., via AJAX/fetch)
+      // and update the map with the returned results.
+    }
+  </script>
+</body>
+</html>
