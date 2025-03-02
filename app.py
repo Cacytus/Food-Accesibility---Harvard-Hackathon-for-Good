@@ -9,7 +9,7 @@ import os
 app = Flask(__name__)
 
 # Database path
-DB_PATH = 'food.db'
+DB_PATH = 'instance/food.db'
 
 @app.route('/')
 def index():
