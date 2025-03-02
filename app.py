@@ -62,7 +62,7 @@ def get_food_locations():
             cursor.execute("SELECT * FROM food")
        
         rows = cursor.fetchall()
-        print(f"Fetched {len(rows)} rows from database")
+        # print(f"Fetched {len(rows)} rows from database")
        
         # Convert to list of dicts
         locations = []
