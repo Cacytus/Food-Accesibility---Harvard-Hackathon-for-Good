@@ -60,7 +60,8 @@ def get_food_locations():
         else:
             # If no filters provided, return all food
             cursor.execute("SELECT * FROM food")
-       
+
+        # debugging
         rows = cursor.fetchall()
         # print(f"Fetched {len(rows)} rows from database")
        
