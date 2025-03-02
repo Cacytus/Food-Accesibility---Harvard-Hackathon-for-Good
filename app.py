@@ -31,7 +31,7 @@ def get_food_locations():
             filters = request.json
            
             # Start building the query
-            query = "SELECT * FROM stores WHERE 1=1"
+            query = "SELECT * FROM food WHERE 1=1"
             params = []
            
             # Apply filters if provided
@@ -58,15 +58,17 @@ def get_food_locations():
             # Execute the filtered query
             cursor.execute(query, params)
         else:
-            # If no filters provided, return all stores
-            cursor.execute("SELECT * FROM stores")
+            # If no filters provided, return all food
+            cursor.execute("SELECT * FROM food")
        
         rows = cursor.fetchall()
+        print(f"Fetched {len(rows)} rows from database")
        
         # Convert to list of dicts
         locations = []
         for row in rows:
-            try:
+            print(f"Processing row: {dict(row)}")
+            try:    
                 # Get coordinates from the database
                 lat = row['Lat']
                 lng = row['Long']
