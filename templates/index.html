@@ -322,9 +322,17 @@
           if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
+          console.log("Got response from API"); //debugging
           return response.json();
         })
         .then(locations => {
+          console.log("Received data:", locations); //debugging
+          console.log(`Number of locations: ${locations.length}`); //debugging
+
+          if (locations.length > 0) { //debugging
+            console.log("Sample location data:", locations[0]); //debugging
+          } //debugging
+
           // Clear previous markers
           markers.forEach(marker => map.removeLayer(marker));
           markers = [];
@@ -409,7 +417,7 @@
       loadFoodLocations();
       
       // If no markers appear, uncomment this line to test if the map is working
-      // debugMarkers();
+      debugMarkers();
     });
 
     // JavaScript function to capture filter values and send them to the Flask backend

@@ -5,6 +5,7 @@ Date: 03/01/2025
 from flask import Flask, render_template, jsonify, request
 import sqlite3
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
 
