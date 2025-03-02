@@ -7,7 +7,9 @@ import sqlite3
 import os
 from flask_cors import CORS
 
+
 app = Flask(__name__)
+CORS(app)
 
 # Database path
 DB_PATH = 'instance/food.db'
