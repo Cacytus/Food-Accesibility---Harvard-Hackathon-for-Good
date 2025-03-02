@@ -111,6 +111,33 @@
       margin-top: 5px;
       font-size: 0.85rem;
     }
+    
+    /* Custom marker styling to ensure visibility at any zoom level */
+    .custom-marker-icon {
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 0 4px rgba(0,0,0,0.5);
+    }
+    
+    .default-marker {
+      background-color: #1ABC9C;
+    }
+    
+    .asian-marker {
+      background-color: #3498DB;
+    }
+    
+    .mexican-marker {
+      background-color: #E74C3C;
+    }
+    
+    .italian-marker {
+      background-color: #F39C12;
+    }
+    
+    .american-marker {
+      background-color: #9B59B6;
+    }
   </style>
 </head>
 <body>
@@ -187,50 +214,63 @@
       maxZoom: 19
     }).addTo(map);
     
-    // Custom icons for different food types
-    const foodIcons = {
-      default: L.icon({
-        iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-shadow.png',
-        shadowSize: [41, 41]
-      }),
-      // Define colors for different ethnicity categories
-      Asian: L.icon({
-        iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
-        className: 'asian-marker', // Use this for custom CSS styling
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-shadow.png',
-        shadowSize: [41, 41]
-      }),
-      // Add more icons for different food types as needed
+    // Custom marker function to create a simple, colorful circular marker
+    function createCustomMarker(color) {
+      return L.divIcon({
+        className: `custom-marker-icon ${color}-marker`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+        popupAnchor: [0, -9]
+      });
+    }
+    
+    // Define marker types based on food ethnicity
+    const foodMarkers = {
+      default: createCustomMarker('default'),
+      Asian: createCustomMarker('asian'),
+      Mexican: createCustomMarker('mexican'),
+      Italian: createCustomMarker('italian'),
+      American: createCustomMarker('american')
     };
     
-    // Function to get the appropriate icon based on food type
-    function getIcon(foodType) {
-      if (!foodType) return foodIcons.default;
+    // Function to get the appropriate marker based on food type
+    function getMarker(foodType) {
+      if (!foodType) return foodMarkers.default;
       
-      // Check if we have a specific icon for this food type
-      if (foodIcons[foodType]) {
-        return foodIcons[foodType];
+      // Check if we have a specific marker for this food type
+      if (foodMarkers[foodType]) {
+        return foodMarkers[foodType];
       }
       
-      // For food types that include "Asian" keywords
+      // For food types that include various keywords
       if (foodType.includes('Asian') || 
           foodType === 'Chinese' || 
           foodType === 'Japanese' || 
           foodType === 'Korean' || 
           foodType === 'Thai' || 
           foodType === 'Vietnamese') {
-        return foodIcons.Asian;
+        return foodMarkers.Asian;
       }
       
-      // Default icon for any other type
-      return foodIcons.default;
+      if (foodType.includes('Mexican') || 
+          foodType === 'Latin' || 
+          foodType === 'Spanish') {
+        return foodMarkers.Mexican;
+      }
+      
+      if (foodType.includes('Italian') || 
+          foodType === 'Mediterranean') {
+        return foodMarkers.Italian;
+      }
+      
+      if (foodType.includes('American') || 
+          foodType === 'Burger' || 
+          foodType === 'BBQ') {
+        return foodMarkers.American;
+      }
+      
+      // Default marker for any other type
+      return foodMarkers.default;
     }
     
     // Function to create popup content for a store
@@ -241,13 +281,13 @@
           <p>${store.address}</p>
       `;
       
-      if (store.website) {
+      if (store.website && store.website !== 'null' && store.website !== 'None') {
         content += `<p class="website"><a href="${store.website}" target="_blank">Visit Website</a></p>`;
       }
       
       content += `<p class="price">Price Range: ${store.price_range}</p>`;
       
-      if (store.ethnic_food_type) {
+      if (store.ethnic_food_type && store.ethnic_food_type !== 'null' && store.ethnic_food_type !== 'None') {
         content += `<p>Cuisine: ${store.ethnic_food_type}</p>`;
       }
       
@@ -278,7 +318,12 @@
       console.log("Loading food locations...");
       
       fetch(url, options)
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(locations => {
           // Clear previous markers
           markers.forEach(marker => map.removeLayer(marker));
@@ -286,40 +331,52 @@
           
           console.log(`Loaded ${locations.length} locations`);
           
+          // Track valid markers for map bounds
+          let validMarkers = [];
+          
           // Add each location to the map
           locations.forEach(location => {
-            // Skip locations without coordinates
-            if (!location.lat || !location.lng) {
-              console.log(`Skipping location without coordinates: ${location.name}`);
-              return;
+            try {
+              // Make sure coordinates are numeric
+              const lat = parseFloat(location.lat);
+              const lng = parseFloat(location.lng);
+              
+              // Skip locations with invalid coordinates
+              if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+                console.log(`Invalid coordinates for location: ${location.name}`);
+                return;
+              }
+              
+              // Create marker with appropriate icon based on food type
+              const marker = L.marker([lat, lng], {
+                icon: getMarker(location.ethnic_food_type)
+              }).addTo(map);
+              
+              // Add popup with store info
+              marker.bindPopup(createPopupContent(location));
+              
+              // Store marker for later reference
+              markers.push(marker);
+              validMarkers.push([lat, lng]);
+            } catch (err) {
+              console.error(`Error creating marker for ${location.name}:`, err);
             }
-            
-            // Make sure coordinates are numeric
-            const lat = parseFloat(location.lat);
-            const lng = parseFloat(location.lng);
-            
-            if (isNaN(lat) || isNaN(lng)) {
-              console.log(`Invalid coordinates for location: ${location.name}`);
-              return;
-            }
-            
-            const marker = L.marker([lat, lng], {
-              icon: getIcon(location.ethnic_food_type)
-            }).addTo(map);
-            
-            // Add popup with store info
-            marker.bindPopup(createPopupContent(location));
-            
-            // Store marker for later reference
-            markers.push(marker);
           });
           
-          // If we have locations, adjust map view to fit all markers
-          if (markers.length > 0) {
-            const group = new L.featureGroup(markers);
-            map.fitBounds(group.getBounds().pad(0.1)); // Add a little padding
+          // If we have valid markers, adjust map view to fit all markers
+          if (validMarkers.length > 0) {
+            console.log(`Setting map bounds for ${validMarkers.length} valid markers`);
+            
+            // If only one marker, zoom to it
+            if (validMarkers.length === 1) {
+              map.setView(validMarkers[0], 14);
+            } else {
+              // Create bounds from all marker positions
+              const bounds = L.latLngBounds(validMarkers);
+              map.fitBounds(bounds.pad(0.1)); // Add 10% padding around the bounds
+            }
           } else {
-            console.log("No markers to display");
+            console.log("No valid markers to display");
           }
         })
         .catch(error => {
@@ -327,10 +384,32 @@
         });
     }
     
+    // Debug function to help troubleshoot marker issues
+    function debugMarkers() {
+      console.log("Adding test markers to verify map functionality");
+      
+      // Add a test marker in Boston
+      const bostonMarker = L.marker([42.3601, -71.0589], {
+        icon: createCustomMarker('default')
+      }).addTo(map);
+      bostonMarker.bindPopup("<strong>Test Marker: Boston</strong>").openPopup();
+      
+      // Add a test marker in Cambridge
+      const cambridgeMarker = L.marker([42.3736, -71.1097], {
+        icon: createCustomMarker('asian')
+      }).addTo(map);
+      cambridgeMarker.bindPopup("<strong>Test Marker: Cambridge</strong>");
+      
+      markers.push(bostonMarker, cambridgeMarker);
+    }
+    
     // Make sure to load locations when page loads
     document.addEventListener('DOMContentLoaded', function() {
       console.log("Page loaded, fetching food locations");
       loadFoodLocations();
+      
+      // If no markers appear, uncomment this line to test if the map is working
+      // debugMarkers();
     });
 
     // JavaScript function to capture filter values and send them to the Flask backend

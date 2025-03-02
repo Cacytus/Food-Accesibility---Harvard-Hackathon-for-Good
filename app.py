@@ -64,21 +64,52 @@ def get_food_locations():
         locations = []
         for row in rows:
             try:
-                # Use the stored Long/Lat values instead of geocoding
+                # Get coordinates from the database
+                lat = row['Lat']
+                lng = row['Long']
+                
+                # Clean up potential string values (in case they're stored that way)
+                if lat and isinstance(lat, str):
+                    lat = lat.strip()
+                if lng and isinstance(lng, str):
+                    lng = lng.strip()
+                
+                # Skip entries without valid coordinates
+                if not lat or not lng:
+                    continue
+                
+                # Try to convert to float (will raise ValueError if not convertible)
+                try:
+                    lat = float(lat)
+                    lng = float(lng)
+                except (ValueError, TypeError):
+                    print(f"Invalid coordinates for {row['Name']}: Lat={lat}, Long={lng}")
+                    continue
+                
+                # Skip entries with zero coordinates (likely placeholders)
+                if lat == 0 or lng == 0:
+                    print(f"Zero coordinates for {row['Name']}")
+                    continue
+                
+                # Create the location dict for this store
                 locations.append({
                     "name": row['Name'],
                     "address": row['Address'],
                     "website": row['URL'],
                     "price_range": "$", # Default value since not in DB
-                    "lat": row['Lat'],
-                    "lng": row['Long'],
-                    "snap_accepted": row['EBT'].lower() == 'yes',
+                    "lat": lat,
+                    "lng": lng,
+                    "snap_accepted": row['EBT'].lower() == 'yes' if row['EBT'] else False,
                     "ethnic_food_type": row['Ethnicity']
                 })
             except Exception as e:
-                print(f"Error processing row {row['Name']}: {e}")
+                print(f"Error processing row {row['Name'] if 'Name' in row else 'unknown'}: {e}")
        
         conn.close()
+        
+        if not locations:
+            print("Warning: No locations found with valid coordinates")
+            
         return jsonify(locations)
    
     except Exception as e:
