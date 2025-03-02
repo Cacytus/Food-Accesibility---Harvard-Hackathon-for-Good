@@ -19,8 +19,13 @@ CORS(app)
 # Database path
 DB_PATH = 'instance/food.db'
 
+# Update routes to use the landing page as the homepage
 @app.route('/')
-def index():
+def home():
+    return render_template('home.html')
+
+@app.route('/map')
+def map():
     return render_template('index.html')
 
 @app.route('/api/food-locations', methods=['GET', 'POST'])
