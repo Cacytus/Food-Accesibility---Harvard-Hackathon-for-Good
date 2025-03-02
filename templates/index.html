@@ -9,6 +9,9 @@
         crossorigin=""/>
   <style>
     /* Basic reset and styling */
+    .user-location-marker {
+      z-index: 1000;
+    }
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
@@ -368,95 +371,145 @@
     
     // Function to load and display food locations
     function loadFoodLocations(filters = null) {
-      let url = '/api/food-locations';
-      let options = {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      };
+  let url = '/api/food-locations';
+  let options = {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  };
+  
+  if (filters) {
+    options.method = 'POST';
+    options.body = JSON.stringify(filters);
+  }
+  
+  // Show loading indicator
+  console.log("Loading food locations...");
+  
+  fetch(url, options)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      console.log("Got response from API"); //debugging
+      return response.json();
+    })
+    .then(data => {
+      console.log("Received data:", data); //debugging
       
-      if (filters) {
-        options.method = 'POST';
-        options.body = JSON.stringify(filters);
+      // Clear previous markers
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+      
+      // Check if we have the new response format (with geocoded_address)
+      let locations;
+      if (data.locations) {
+        locations = data.locations;
+        
+        // If we have geocoded address information, add a special marker for it
+        if (data.geocoded_address) {
+          const geocoded = data.geocoded_address;
+          const userMarker = L.marker([geocoded.lat, geocoded.lng], {
+            icon: L.divIcon({
+              className: 'user-location-marker',
+              html: '<div style="background-color: #FF4500; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>',
+              iconSize: [22, 22],
+              iconAnchor: [11, 11]
+            })
+          }).addTo(map);
+          
+          userMarker.bindPopup(`<strong>Your Location</strong><br>${geocoded.address}`);
+          markers.push(userMarker);
+          
+          console.log(`Added user location marker at: ${geocoded.lat}, ${geocoded.lng}`);
+        }
+      } else {
+        locations = data;
       }
       
-      // Show loading indicator
-      console.log("Loading food locations...");
+      console.log(`Number of locations: ${locations.length}`); //debugging
       
-      fetch(url, options)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+      if (locations.length > 0) { //debugging
+        console.log("Sample location data:", locations[0]); //debugging
+      } //debugging
+      
+      // Track valid markers for map bounds
+      let validMarkers = [];
+      
+      // Add each location to the map
+      locations.forEach(location => {
+        try {
+          // Make sure coordinates are numeric
+          const lat = parseFloat(location.lat);
+          const lng = parseFloat(location.lng);
+          
+          // Skip locations with invalid coordinates
+          if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+            console.log(`Invalid coordinates for location: ${location.name}`);
+            return;
           }
-          console.log("Got response from API"); //debugging
-          return response.json();
-        })
-        .then(locations => {
-          console.log("Received data:", locations); //debugging
-          console.log(`Number of locations: ${locations.length}`); //debugging
-
-          if (locations.length > 0) { //debugging
-            console.log("Sample location data:", locations[0]); //debugging
-          } //debugging
-
-          // Clear previous markers
-          markers.forEach(marker => map.removeLayer(marker));
-          markers = [];
           
-          console.log(`Loaded ${locations.length} locations`);
+          // Create marker with appropriate icon based on food type
+          const marker = L.marker([lat, lng], {
+            icon: getMarker(location.ethnic_food_type)
+          }).addTo(map);
           
-          // Track valid markers for map bounds
-          let validMarkers = [];
+          // Create popup content - add distance if available
+          let popupContent = createPopupContent(location);
           
-          // Add each location to the map
-          locations.forEach(location => {
-            try {
-              // Make sure coordinates are numeric
-              const lat = parseFloat(location.lat);
-              const lng = parseFloat(location.lng);
-              
-              // Skip locations with invalid coordinates
-              if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
-                console.log(`Invalid coordinates for location: ${location.name}`);
-                return;
-              }
-              
-              // Create marker with appropriate icon based on food type
-              const marker = L.marker([lat, lng], {
-                icon: getMarker(location.ethnic_food_type)
-              }).addTo(map);
-              
-              // Add popup with store info
-              marker.bindPopup(createPopupContent(location));
-              
-              // Store marker for later reference
-              markers.push(marker);
-              validMarkers.push([lat, lng]);
-            } catch (err) {
-              console.error(`Error creating marker for ${location.name}:`, err);
-            }
-          });
-          
-          // If we have valid markers, adjust map view to fit all markers
-          if (validMarkers.length > 0) {
-            console.log(`Setting map bounds for ${validMarkers.length} valid markers`);
+          // If the location has a distance property, add it to the popup
+          if (location.distance !== undefined) {
+            // Find the div with class "store-popup"
+            const popupEl = document.createElement('div');
+            popupEl.innerHTML = popupContent;
             
-            // If only one marker, zoom to it
-            if (validMarkers.length === 1) {
-              map.setView(validMarkers[0], 14);
-            } else {
-              // Create bounds from all marker positions
-              const bounds = L.latLngBounds(validMarkers);
-              map.fitBounds(bounds.pad(0.1)); // Add 10% padding around the bounds
-            }
-          } else {
-            console.log("No valid markers to display");
+            // Create a new paragraph for the distance
+            const distanceEl = document.createElement('p');
+            distanceEl.textContent = `Distance: ${location.distance} miles`;
+            distanceEl.style.fontWeight = 'bold';
+            distanceEl.style.color = '#1ABC9C';
+            
+            // Insert the distance element after the address but before other details
+            const storePopup = popupEl.querySelector('.store-popup');
+            storePopup.insertBefore(distanceEl, storePopup.children[2]);
+            
+            // Update popup content
+            popupContent = popupEl.innerHTML;
           }
-        })
-        .catch(error => {
-          console.error('Error loading food locations:', error);
-        });
+          
+          // Add popup with store info
+          marker.bindPopup(popupContent);
+          
+          // Store marker for later reference
+          markers.push(marker);
+          validMarkers.push([lat, lng]);
+        } catch (err) {
+          console.error(`Error creating marker for ${location.name}:`, err);
+        }
+      });
+      
+      // If we have valid markers, adjust map view to fit all markers
+      if (validMarkers.length > 0) {
+        console.log(`Setting map bounds for ${validMarkers.length} valid markers`);
+        
+        // If only one marker, zoom to it
+        if (validMarkers.length === 1) {
+          map.setView(validMarkers[0], 14);
+        } else {
+          // Create bounds from all marker positions
+          const bounds = L.latLngBounds(validMarkers);
+          map.fitBounds(bounds.pad(0.1)); // Add 10% padding around the bounds
+        }
+      } else {
+        console.log("No valid markers to display");
+      }
+    })
+    .catch(error => {
+      console.error('Error loading food locations:', error);
+      // Show error message to user
+      alert('Error loading locations. Please try again or check your address.');
+    });
     }
     
     // Debug function to help troubleshoot marker issues

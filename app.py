@@ -6,7 +6,12 @@ from flask import Flask, render_template, jsonify, request
 import sqlite3
 import os
 from flask_cors import CORS
+# Add these imports at the top of your file
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
 
+# Import your new function
+from geocoding import geocode_and_filter_by_distance
 
 app = Flask(__name__)
 CORS(app)
@@ -39,10 +44,7 @@ def get_food_locations():
                 query += " AND Name LIKE ?"
                 params.append(f"%{filters['storeName']}%")
            
-            if filters.get('location'):
-                # Filter by location text
-                query += " AND Address LIKE ?"
-                params.append(f"%{filters['location']}%")
+            # Note: We'll handle location and distance separately after fetching data
            
             if filters.get('priceRange'):
                 query += " AND price_range = ?"
@@ -61,14 +63,12 @@ def get_food_locations():
             # If no filters provided, return all food
             cursor.execute("SELECT * FROM food")
 
-        # debugging
+        # Fetch all rows from database
         rows = cursor.fetchall()
-        # print(f"Fetched {len(rows)} rows from database")
        
         # Convert to list of dicts
         locations = []
         for row in rows:
-            print(f"Processing row: {dict(row)}")
             try:    
                 # Get coordinates from the database
                 lat = row['Lat']
@@ -110,6 +110,29 @@ def get_food_locations():
                 })
             except Exception as e:
                 print(f"Error processing row {row['Name'] if 'Name' in row else 'unknown'}: {e}")
+        
+        # Apply geocoding and distance filtering if location and distance are provided
+        if request.method == 'POST' and request.is_json:
+            filters = request.json
+            if filters.get('location') and filters.get('distance'):
+                success, result, filtered_locations = geocode_and_filter_by_distance(
+                    filters['location'], 
+                    filters['distance'], 
+                    locations
+                )
+                
+                if success:
+                    # Return the filtered locations along with the geocoded address info
+                    response = {
+                        "geocoded_address": result,
+                        "locations": filtered_locations
+                    }
+                    conn.close()
+                    return jsonify(response)
+                else:
+                    # If geocoding failed, return the error message
+                    conn.close()
+                    return jsonify({"error": result, "locations": locations}), 400
        
         conn.close()
         
