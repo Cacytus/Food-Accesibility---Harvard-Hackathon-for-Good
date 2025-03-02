@@ -92,6 +92,9 @@
     .store-popup .price {
       font-weight: bold;
     }
+    .store-popup .website {
+      margin-top: 8px;
+    }
     .store-popup .snap-accepted {
       background-color: #e8f5e9;
       border-radius: 4px;
@@ -112,6 +115,10 @@
     <div class="sidebar">
       <h2>Filters</h2>
       <div class="filter-group">
+        <label for="store-name">Store Name</label>
+        <input type="text" id="store-name" placeholder="Enter store name">
+      </div>
+      <div class="filter-group">
         <label for="location">Location</label>
         <input type="text" id="location" placeholder="Enter a location">
       </div>
@@ -122,6 +129,8 @@
           <option value="3">Within 3 miles</option>
           <option value="5">Within 5 miles</option>
           <option value="10">Within 10 miles</option>
+          <option value="20">Within 20 miles</option>
+          <option value="50">Within 50 miles</option>
         </select>
       </div>
       <div class="filter-group">
@@ -131,42 +140,88 @@
           <option value="$">$</option>
           <option value="$$">$$</option>
           <option value="$$$">$$$</option>
+          <option value="$$$$">$$$$</option>
         </select>
       </div>
       <div class="filter-group">
-        <label>Food Type</label>
-        <input type="checkbox" id="grocery" value="grocery">
-        <label for="grocery" style="display:inline;">Grocery</label><br>
-        <input type="checkbox" id="market" value="market">
-        <label for="market" style="display:inline;">Market</label><br>
-        <input type="checkbox" id="asian" value="asian">
-        <label for="asian" style="display:inline;">Asian</label>
-      </div>
-      <div class="filter-group">
-        <label for="food-search">Food Search</label>
-        <input type="text" id="food-search" placeholder="Search for food items...">
-      </div>
-      <div class="filter-group">
-        <label for="health-info">Health Information</label>
-        <select id="health-info">
-          <option value="">Select health criteria</option>
-          <option value="low-sodium">Low Sodium</option>
-          <option value="gluten-free">Gluten-Free</option>
-          <option value="organic">Organic</option>
+        <label for="ethnic-food">Ethnic Food Type</label>
+        <select id="ethnic-food">
+          <option value="Any">Any</option>
+          <option value="African">African</option>
+          <option value="Algerian">Algerian</option>
+          <option value="Argentinian">Argentinian</option>
+          <option value="Armenian">Armenian</option>
+          <option value="Austrian">Austrian</option>
+          <option value="Bosnian">Bosnian</option>
+          <option value="Brazilian">Brazilian</option>
+          <option value="British">British</option>
+          <option value="Bulgarian">Bulgarian</option>
+          <option value="Cambodian">Cambodian</option>
+          <option value="Cape Verdean / Haitian">Cape Verdean / Haitian</option>
+          <option value="Caribbean">Caribbean</option>
+          <option value="Montserratian">Montserratian</option>
+          <option value="Chinese">Chinese</option>
+          <option value="Colombian">Colombian</option>
+          <option value="Danish">Danish</option>
+          <option value="Dominican">Dominican</option>
+          <option value="East Asian">East Asian</option>
+          <option value="Ecuadorean">Ecuadorean</option>
+          <option value="Egyptian and Lebanese">Egyptian and Lebanese</option>
+          <option value="Ethiopian">Ethiopian</option>
+          <option value="European">European</option>
+          <option value="Filipino">Filipino</option>
+          <option value="French">French</option>
+          <option value="French-Asian">French-Asian</option>
+          <option value="French-Canadian">French-Canadian</option>
+          <option value="German">German</option>
+          <option value="Greek">Greek</option>
+          <option value="Guatemalan">Guatemalan</option>
+          <option value="Haitian">Haitian</option>
+          <option value="Halal">Halal</option>
+          <option value="Honduran">Honduran</option>
+          <option value="Indian">Indian</option>
+          <option value="International">International</option>
+          <option value="Iranian/Persian">Iranian/Persian</option>
+          <option value="Irish">Irish</option>
+          <option value="Israeli">Israeli</option>
+          <option value="Italian">Italian</option>
+          <option value="Jamaican">Jamaican</option>
+          <option value="Japanese">Japanese</option>
+          <option value="Japanese French">Japanese French</option>
+          <option value="Korean">Korean</option>
+          <option value="Kosher">Kosher</option>
+          <option value="Latin American">Latin American</option>
+          <option value="Lebanese">Lebanese</option>
+          <option value="Mediterranean">Mediterranean</option>
+          <option value="Mexican">Mexican</option>
+          <option value="Middle Eastern">Middle Eastern</option>
+          <option value="Moldovan">Moldovan</option>
+          <option value="Moroccan">Moroccan</option>
+          <option value="Nepali">Nepali</option>
+          <option value="Nigerian">Nigerian</option>
+          <option value="Pakistani">Pakistani</option>
+          <option value="Peruvian">Peruvian</option>
+          <option value="Polish">Polish</option>
+          <option value="Portuguese">Portuguese</option>
+          <option value="Puerto Rican">Puerto Rican</option>
+          <option value="Russian">Russian</option>
+          <option value="Salvadoran">Salvadoran</option>
+          <option value="Scandinavian">Scandinavian</option>
+          <option value="South Asian">South Asian</option>
+          <option value="Southeast Asian">Southeast Asian</option>
+          <option value="Spanish">Spanish</option>
+          <option value="Swedish">Swedish</option>
+          <option value="Swiss">Swiss</option>
+          <option value="Syrian">Syrian</option>
+          <option value="Taiwanese">Taiwanese</option>
+          <option value="Thai">Thai</option>
+          <option value="Turkish">Turkish</option>
+          <option value="Ukrainian">Ukrainian</option>
         </select>
       </div>
       <div class="filter-group">
         <input type="checkbox" id="snap" value="snap">
         <label for="snap" style="display:inline;">SNAP Accepted</label>
-      </div>
-      <div class="filter-group">
-        <label for="nutrition-suggestion">Nutrition Suggestion</label>
-        <select id="nutrition-suggestion">
-          <option value="">Select suggestion</option>
-          <option value="balanced">Balanced Diet</option>
-          <option value="high-protein">High Protein</option>
-          <option value="low-carb">Low Carb</option>
-        </select>
       </div>
       <button class="apply-btn" onclick="applyFilters()">Apply Filters</button>
     </div>
@@ -192,46 +247,16 @@
       maxZoom: 19
     }).addTo(map);
     
-    // Set bounds to restrict map panning to Greater Boston Area
-    const bostonBounds = L.latLngBounds(
-      L.latLng(42.2279, -71.1912), // Southwest bounds
-      L.latLng(42.4671, -70.9185)  // Northeast bounds
-    );
-    map.setMaxBounds(bostonBounds);
-    map.on('drag', function() {
-      map.panInsideBounds(bostonBounds, { animate: false });
-    });
-
-    // Function to create custom icons based on store type
-    function getIcon(storeType) {
-      // Icon sizes and anchors
-      const iconSize = [32, 32];
-      const iconAnchor = [16, 32];
-      const popupAnchor = [0, -32];
-      
-      // Different colors for different store types
-      let iconUrl;
-      switch(storeType) {
-        case 'grocery':
-          iconUrl = 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png';
-          break;
-        case 'market':
-          // Different icon for markets
-          iconUrl = 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png';
-          break;
-        case 'asian':
-          // Different icon for asian stores
-          iconUrl = 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png';
-          break;
-        default:
-          iconUrl = 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png';
-      }
-      
+    // Function to create custom icons based on food type
+    function getIcon(foodType) {
+      // Default icon
       return L.icon({
-        iconUrl: iconUrl,
-        iconSize: iconSize,
-        iconAnchor: iconAnchor,
-        popupAnchor: popupAnchor
+        iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-shadow.png',
+        shadowSize: [41, 41]
       });
     }
     
@@ -241,9 +266,17 @@
         <div class="store-popup">
           <h3>${store.name}</h3>
           <p>${store.address}</p>
-          <p class="price">Price Range: ${store.price_range}</p>
-          <p>Type: ${store.food_type.charAt(0).toUpperCase() + store.food_type.slice(1)}</p>
       `;
+      
+      if (store.website) {
+        content += `<p class="website"><a href="${store.website}" target="_blank">Visit Website</a></p>`;
+      }
+      
+      content += `<p class="price">Price Range: ${store.price_range}</p>`;
+      
+      if (store.ethnic_food_type) {
+        content += `<p>Cuisine: ${store.ethnic_food_type}</p>`;
+      }
       
       if (store.snap_accepted) {
         content += `<div class="snap-accepted">SNAP Accepted</div>`;
@@ -254,8 +287,21 @@
     }
     
     // Function to load and display food locations
-    function loadFoodLocations() {
-      fetch('/api/food-locations')
+    function loadFoodLocations(filters = null) {
+      let url = '/api/food-locations';
+      let options = {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+      
+      if (filters) {
+        options.method = 'POST';
+        options.body = JSON.stringify(filters);
+      }
+      
+      fetch(url, options)
         .then(response => response.json())
         .then(locations => {
           // Clear previous markers
@@ -264,8 +310,11 @@
           
           // Add each location to the map
           locations.forEach(location => {
+            // Skip locations without coordinates
+            if (!location.lat || !location.lng) return;
+            
             const marker = L.marker([location.lat, location.lng], {
-              icon: getIcon(location.food_type)
+              icon: getIcon(location.ethnic_food_type)
             }).addTo(map);
             
             // Add popup with store info
@@ -276,7 +325,7 @@
           });
           
           // If we have locations, adjust map view to fit all markers
-          if (locations.length > 0) {
+          if (markers.length > 0) {
             const group = new L.featureGroup(markers);
             map.fitBounds(group.getBounds().pad(0.1)); // Add a little padding
           }
@@ -291,28 +340,21 @@
       loadFoodLocations();
     });
 
-    // JavaScript function to capture filter values and send them to your Flask backend
+    // JavaScript function to capture filter values and send them to the Flask backend
     function applyFilters() {
       const filters = {
+        storeName: document.getElementById('store-name').value,
         location: document.getElementById('location').value,
         distance: document.getElementById('distance').value,
         priceRange: document.getElementById('price-range').value,
-        foodSearch: document.getElementById('food-search').value,
-        healthInfo: document.getElementById('health-info').value,
-        snap: document.getElementById('snap').checked,
-        nutrition: document.getElementById('nutrition-suggestion').value,
-        // For food types, collect all checked checkboxes
-        foodTypes: Array.from(document.querySelectorAll('input[type="checkbox"]'))
-                        .filter(cb => cb.checked && cb.id !== 'snap')
-                        .map(cb => cb.value)
+        ethnicFoodType: document.getElementById('ethnic-food').value,
+        snap: document.getElementById('snap').checked
       };
 
       console.log("Filters applied:", filters);
       
       // Send filters to backend and update map
-      // For now, we're just reloading all locations
-      // In the future, this would do a filtered query
-      loadFoodLocations();
+      loadFoodLocations(filters);
     }
   </script>
 </body>
