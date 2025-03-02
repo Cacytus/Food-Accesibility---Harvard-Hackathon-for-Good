@@ -5,8 +5,6 @@ Date: 03/01/2025
 from flask import Flask, render_template, jsonify, request
 import sqlite3
 import os
-import requests
-import time
 
 app = Flask(__name__)
 
@@ -39,8 +37,7 @@ def get_food_locations():
                 params.append(f"%{filters['storeName']}%")
            
             if filters.get('location'):
-                # This would need geocoding and distance calculation
-                # For simplicity, we're just doing a text search on address
+                # Filter by location text
                 query += " AND Address LIKE ?"
                 params.append(f"%{filters['location']}%")
            
@@ -67,24 +64,17 @@ def get_food_locations():
         locations = []
         for row in rows:
             try:
-                # Get coordinates for the address
-                lat, lng = geocode_address(row['Address'])
-                
-                # Determine price range (using a placeholder since it's not in your DB)
-                price_range = "$" # Default value
-                
+                # Use the stored Long/Lat values instead of geocoding
                 locations.append({
                     "name": row['Name'],
                     "address": row['Address'],
                     "website": row['URL'],
-                    "price_range": price_range,
-                    "lat": lat,
-                    "lng": lng,
+                    "price_range": "$", # Default value since not in DB
+                    "lat": row['Lat'],
+                    "lng": row['Long'],
                     "snap_accepted": row['EBT'].lower() == 'yes',
                     "ethnic_food_type": row['Ethnicity']
                 })
-                # Add a small delay to avoid overwhelming geocoding service
-                time.sleep(0.1)
             except Exception as e:
                 print(f"Error processing row {row['Name']}: {e}")
        
@@ -94,36 +84,6 @@ def get_food_locations():
     except Exception as e:
         print(f"Error accessing database: {e}")
         return jsonify({"error": str(e)}), 500
-
-def geocode_address(address):
-    """
-    Convert an address to latitude and longitude using OpenStreetMap's Nominatim service.
-    """
-    try:
-        # Use Nominatim for geocoding (respect usage policy with delay)
-        nominatim_url = "https://nominatim.openstreetmap.org/search"
-        params = {
-            "q": address,
-            "format": "json",
-            "limit": 1
-        }
-        headers = {
-            "User-Agent": "FoodStoreLocatorApp/1.0"  # Specify a user agent as required by Nominatim
-        }
-        
-        response = requests.get(nominatim_url, params=params, headers=headers)
-        data = response.json()
-        
-        if data and len(data) > 0:
-            return float(data[0]["lat"]), float(data[0]["lon"])
-        else:
-            # Default to Boston coordinates if geocoding fails
-            print(f"Could not geocode address: {address}")
-            return 42.3601, -71.0589
-    except Exception as e:
-        print(f"Geocoding error: {e}")
-        # Default to Boston coordinates
-        return 42.3601, -71.0589
 
 if __name__ == '__main__':
     # Check if database exists

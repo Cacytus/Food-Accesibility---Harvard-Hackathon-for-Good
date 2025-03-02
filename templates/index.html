@@ -294,7 +294,16 @@
               return;
             }
             
-            const marker = L.marker([location.lat, location.lng], {
+            // Make sure coordinates are numeric
+            const lat = parseFloat(location.lat);
+            const lng = parseFloat(location.lng);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+              console.log(`Invalid coordinates for location: ${location.name}`);
+              return;
+            }
+            
+            const marker = L.marker([lat, lng], {
               icon: getIcon(location.ethnic_food_type)
             }).addTo(map);
             
