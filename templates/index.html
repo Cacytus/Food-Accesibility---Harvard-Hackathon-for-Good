@@ -71,11 +71,35 @@
       flex: 1;
       padding: 1rem;
     }
-    /* Map styling - important to set a height */
+    /* Map styling */
     #map {
       width: 100%;
       height: 100%;
       border-radius: 4px;
+    }
+    /* Custom popup styling */
+    .store-popup {
+      max-width: 250px;
+    }
+    .store-popup h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      color: #1ABC9C;
+    }
+    .store-popup p {
+      margin: 5px 0;
+    }
+    .store-popup .price {
+      font-weight: bold;
+    }
+    .store-popup .snap-accepted {
+      background-color: #e8f5e9;
+      border-radius: 4px;
+      padding: 3px 6px;
+      color: #43a047;
+      display: inline-block;
+      margin-top: 5px;
+      font-size: 0.85rem;
     }
   </style>
 </head>
@@ -103,17 +127,18 @@
       <div class="filter-group">
         <label for="price-range">Price Range</label>
         <select id="price-range">
+          <option value="">Any</option>
           <option value="$">$</option>
           <option value="$$">$$</option>
           <option value="$$$">$$$</option>
         </select>
       </div>
       <div class="filter-group">
-        <label>Specific Ethnic Food Groups</label>
-        <input type="checkbox" id="mexican" value="mexican">
-        <label for="mexican" style="display:inline;">Mexican</label><br>
-        <input type="checkbox" id="italian" value="italian">
-        <label for="italian" style="display:inline;">Italian</label><br>
+        <label>Food Type</label>
+        <input type="checkbox" id="grocery" value="grocery">
+        <label for="grocery" style="display:inline;">Grocery</label><br>
+        <input type="checkbox" id="market" value="market">
+        <label for="market" style="display:inline;">Market</label><br>
         <input type="checkbox" id="asian" value="asian">
         <label for="asian" style="display:inline;">Asian</label>
       </div>
@@ -158,18 +183,14 @@
   
   <script>
     // Initialize the map centered on Boston
-    const map = L.map('map').setView([42.3601, -71.0589], 12); // Boston coordinates with zoom level 12
+    const map = L.map('map').setView([42.3601, -71.0589], 12); // Boston coordinates
+    let markers = [];
     
-    // Add OpenStreetMap tile layer (free to use)
+    // Add OpenStreetMap tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(map);
-
-    // Optional: Add a marker for downtown Boston
-    L.marker([42.3601, -71.0589]).addTo(map)
-      .bindPopup('Downtown Boston')
-      .openPopup();
     
     // Set bounds to restrict map panning to Greater Boston Area
     const bostonBounds = L.latLngBounds(
@@ -179,6 +200,95 @@
     map.setMaxBounds(bostonBounds);
     map.on('drag', function() {
       map.panInsideBounds(bostonBounds, { animate: false });
+    });
+
+    // Function to create custom icons based on store type
+    function getIcon(storeType) {
+      // Icon sizes and anchors
+      const iconSize = [32, 32];
+      const iconAnchor = [16, 32];
+      const popupAnchor = [0, -32];
+      
+      // Different colors for different store types
+      let iconUrl;
+      switch(storeType) {
+        case 'grocery':
+          iconUrl = 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png';
+          break;
+        case 'market':
+          // Different icon for markets
+          iconUrl = 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png';
+          break;
+        case 'asian':
+          // Different icon for asian stores
+          iconUrl = 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png';
+          break;
+        default:
+          iconUrl = 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png';
+      }
+      
+      return L.icon({
+        iconUrl: iconUrl,
+        iconSize: iconSize,
+        iconAnchor: iconAnchor,
+        popupAnchor: popupAnchor
+      });
+    }
+    
+    // Function to create popup content for a store
+    function createPopupContent(store) {
+      let content = `
+        <div class="store-popup">
+          <h3>${store.name}</h3>
+          <p>${store.address}</p>
+          <p class="price">Price Range: ${store.price_range}</p>
+          <p>Type: ${store.food_type.charAt(0).toUpperCase() + store.food_type.slice(1)}</p>
+      `;
+      
+      if (store.snap_accepted) {
+        content += `<div class="snap-accepted">SNAP Accepted</div>`;
+      }
+      
+      content += `</div>`;
+      return content;
+    }
+    
+    // Function to load and display food locations
+    function loadFoodLocations() {
+      fetch('/api/food-locations')
+        .then(response => response.json())
+        .then(locations => {
+          // Clear previous markers
+          markers.forEach(marker => map.removeLayer(marker));
+          markers = [];
+          
+          // Add each location to the map
+          locations.forEach(location => {
+            const marker = L.marker([location.lat, location.lng], {
+              icon: getIcon(location.food_type)
+            }).addTo(map);
+            
+            // Add popup with store info
+            marker.bindPopup(createPopupContent(location));
+            
+            // Store marker for later reference
+            markers.push(marker);
+          });
+          
+          // If we have locations, adjust map view to fit all markers
+          if (locations.length > 0) {
+            const group = new L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.1)); // Add a little padding
+          }
+        })
+        .catch(error => {
+          console.error('Error loading food locations:', error);
+        });
+    }
+    
+    // Load locations when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      loadFoodLocations();
     });
 
     // JavaScript function to capture filter values and send them to your Flask backend
@@ -191,15 +301,18 @@
         healthInfo: document.getElementById('health-info').value,
         snap: document.getElementById('snap').checked,
         nutrition: document.getElementById('nutrition-suggestion').value,
-        // For ethnic food groups, collect all checked checkboxes
-        ethnicGroups: Array.from(document.querySelectorAll('input[type="checkbox"]'))
-                          .filter(cb => cb.checked && cb.id !== 'snap')
-                          .map(cb => cb.value)
+        // For food types, collect all checked checkboxes
+        foodTypes: Array.from(document.querySelectorAll('input[type="checkbox"]'))
+                        .filter(cb => cb.checked && cb.id !== 'snap')
+                        .map(cb => cb.value)
       };
 
       console.log("Filters applied:", filters);
-      // In the future, you'll send this filter data to the backend
-      // and update the map with the returned results.
+      
+      // Send filters to backend and update map
+      // For now, we're just reloading all locations
+      // In the future, this would do a filtered query
+      loadFoodLocations();
     }
   </script>
 </body>
