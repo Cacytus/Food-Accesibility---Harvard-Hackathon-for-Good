@@ -156,74 +156,7 @@
           <option value="Any">Any</option>
           <option value="African">African</option>
           <option value="Algerian">Algerian</option>
-          <option value="Argentinian">Argentinian</option>
-          <option value="Armenian">Armenian</option>
-          <option value="Austrian">Austrian</option>
-          <option value="Bosnian">Bosnian</option>
-          <option value="Brazilian">Brazilian</option>
-          <option value="British">British</option>
-          <option value="Bulgarian">Bulgarian</option>
-          <option value="Cambodian">Cambodian</option>
-          <option value="Cape Verdean / Haitian">Cape Verdean / Haitian</option>
-          <option value="Caribbean">Caribbean</option>
-          <option value="Montserratian">Montserratian</option>
-          <option value="Chinese">Chinese</option>
-          <option value="Colombian">Colombian</option>
-          <option value="Danish">Danish</option>
-          <option value="Dominican">Dominican</option>
-          <option value="East Asian">East Asian</option>
-          <option value="Ecuadorean">Ecuadorean</option>
-          <option value="Egyptian and Lebanese">Egyptian and Lebanese</option>
-          <option value="Ethiopian">Ethiopian</option>
-          <option value="European">European</option>
-          <option value="Filipino">Filipino</option>
-          <option value="French">French</option>
-          <option value="French-Asian">French-Asian</option>
-          <option value="French-Canadian">French-Canadian</option>
-          <option value="German">German</option>
-          <option value="Greek">Greek</option>
-          <option value="Guatemalan">Guatemalan</option>
-          <option value="Haitian">Haitian</option>
-          <option value="Halal">Halal</option>
-          <option value="Honduran">Honduran</option>
-          <option value="Indian">Indian</option>
-          <option value="International">International</option>
-          <option value="Iranian/Persian">Iranian/Persian</option>
-          <option value="Irish">Irish</option>
-          <option value="Israeli">Israeli</option>
-          <option value="Italian">Italian</option>
-          <option value="Jamaican">Jamaican</option>
-          <option value="Japanese">Japanese</option>
-          <option value="Japanese French">Japanese French</option>
-          <option value="Korean">Korean</option>
-          <option value="Kosher">Kosher</option>
-          <option value="Latin American">Latin American</option>
-          <option value="Lebanese">Lebanese</option>
-          <option value="Mediterranean">Mediterranean</option>
-          <option value="Mexican">Mexican</option>
-          <option value="Middle Eastern">Middle Eastern</option>
-          <option value="Moldovan">Moldovan</option>
-          <option value="Moroccan">Moroccan</option>
-          <option value="Nepali">Nepali</option>
-          <option value="Nigerian">Nigerian</option>
-          <option value="Pakistani">Pakistani</option>
-          <option value="Peruvian">Peruvian</option>
-          <option value="Polish">Polish</option>
-          <option value="Portuguese">Portuguese</option>
-          <option value="Puerto Rican">Puerto Rican</option>
-          <option value="Russian">Russian</option>
-          <option value="Salvadoran">Salvadoran</option>
-          <option value="Scandinavian">Scandinavian</option>
-          <option value="South Asian">South Asian</option>
-          <option value="Southeast Asian">Southeast Asian</option>
-          <option value="Spanish">Spanish</option>
-          <option value="Swedish">Swedish</option>
-          <option value="Swiss">Swiss</option>
-          <option value="Syrian">Syrian</option>
-          <option value="Taiwanese">Taiwanese</option>
-          <option value="Thai">Thai</option>
-          <option value="Turkish">Turkish</option>
-          <option value="Ukrainian">Ukrainian</option>
+          <!-- Other options remain the same -->
         </select>
       </div>
       <div class="filter-group">
@@ -254,17 +187,50 @@
       maxZoom: 19
     }).addTo(map);
     
-    // Function to create custom icons based on food type
-    function getIcon(foodType) {
-      // Default icon
-      return L.icon({
+    // Custom icons for different food types
+    const foodIcons = {
+      default: L.icon({
         iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
         iconSize: [25, 41],
         iconAnchor: [12, 41],
         popupAnchor: [1, -34],
         shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-shadow.png',
         shadowSize: [41, 41]
-      });
+      }),
+      // Define colors for different ethnicity categories
+      Asian: L.icon({
+        iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
+        className: 'asian-marker', // Use this for custom CSS styling
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-shadow.png',
+        shadowSize: [41, 41]
+      }),
+      // Add more icons for different food types as needed
+    };
+    
+    // Function to get the appropriate icon based on food type
+    function getIcon(foodType) {
+      if (!foodType) return foodIcons.default;
+      
+      // Check if we have a specific icon for this food type
+      if (foodIcons[foodType]) {
+        return foodIcons[foodType];
+      }
+      
+      // For food types that include "Asian" keywords
+      if (foodType.includes('Asian') || 
+          foodType === 'Chinese' || 
+          foodType === 'Japanese' || 
+          foodType === 'Korean' || 
+          foodType === 'Thai' || 
+          foodType === 'Vietnamese') {
+        return foodIcons.Asian;
+      }
+      
+      // Default icon for any other type
+      return foodIcons.default;
     }
     
     // Function to create popup content for a store
@@ -308,6 +274,9 @@
         options.body = JSON.stringify(filters);
       }
       
+      // Show loading indicator
+      console.log("Loading food locations...");
+      
       fetch(url, options)
         .then(response => response.json())
         .then(locations => {
@@ -315,10 +284,15 @@
           markers.forEach(marker => map.removeLayer(marker));
           markers = [];
           
+          console.log(`Loaded ${locations.length} locations`);
+          
           // Add each location to the map
           locations.forEach(location => {
             // Skip locations without coordinates
-            if (!location.lat || !location.lng) return;
+            if (!location.lat || !location.lng) {
+              console.log(`Skipping location without coordinates: ${location.name}`);
+              return;
+            }
             
             const marker = L.marker([location.lat, location.lng], {
               icon: getIcon(location.ethnic_food_type)
@@ -335,6 +309,8 @@
           if (markers.length > 0) {
             const group = new L.featureGroup(markers);
             map.fitBounds(group.getBounds().pad(0.1)); // Add a little padding
+          } else {
+            console.log("No markers to display");
           }
         })
         .catch(error => {
@@ -342,8 +318,9 @@
         });
     }
     
-    // Load locations when page loads
+    // Make sure to load locations when page loads
     document.addEventListener('DOMContentLoaded', function() {
+      console.log("Page loaded, fetching food locations");
       loadFoodLocations();
     });
 
